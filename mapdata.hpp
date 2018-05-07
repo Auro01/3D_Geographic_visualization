@@ -6,11 +6,10 @@ struct MapDataPoint {
     double longitude;
     double value;
 
-    MapDataPoint();
+    MapDataPoint(double lat, double lng, double val);
 };
 
 MapDataPoint::MapDataPoint(double lat, double lng, double val) : 
-    latitude(lat), longitude(lng), value(val)
-{ }
+    latitude(lat), longitude(lng), value(val) { }
 
 #endif

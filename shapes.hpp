@@ -21,7 +21,7 @@ void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
     auto farLeft = center + glm::dvec3(-radius, 0, -radius);    
     auto nearRight = center + glm::dvec3(radius, 0, radius);
     auto nearLeft = center + glm::dvec3(-radius, 0, radius);
-    auto bottom = center + glm::dvec3(0, radius, 0);
+    auto bottom = center + glm::dvec3(0, -radius, 0);
 
     queue<glm::dvec3> sphere;
 

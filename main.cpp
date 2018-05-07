@@ -9,6 +9,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <regex>
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -104,20 +105,19 @@ void display()
 
 void loadFile(char * name) {
     ifstream file;
+    smatch matches;
+    string line;
+    regex expr("(\\d+(?:\\.\\d*)?),(\\d+(?:\\.\\d*)?),(\\d+(?:\\.\\d*)?)");
+
     file.open(name);
 
-    string line;
-
     while(getline(file, line)) {
-        auto lineStream = stringstream(line);
-        string latStr;
-        string lngStr;
-        string valStr;
-        getline(lineStream, latStr, ',');
-        getline(lineStream, lngStr, ',');
-        getline(lineStream, valStr, ',');
-
-        data.emplace();
+        if(regex_match(line,matches, expr)) {
+            double lat = stod(string(matches[1].first, matches[1].second));
+            double lng = stod(string(matches[2].first, matches[2].second));
+            double val = stod(string(matches[3].first, matches[3].second));
+            data.emplace_back(lat, lng, val);
+        }
     }
 }
 
@@ -134,8 +134,16 @@ int main( int argc, char **argv )
     //glutMouseWheelFunc( wheel );
     glutDisplayFunc( display );
 
-    loadFile(argv[1]);
+    if(argc > 1) {
+        loadFile(argv[1]);
 
-    glutMainLoop();
+        for(auto point : data) {
+            cout << point.latitude << '\t';
+            cout << point.longitude << '\t';
+            cout << point.value << endl;
+        }
+
+        //glutMainLoop();
+    }
     return 0;
 }

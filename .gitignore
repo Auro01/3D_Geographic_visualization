@@ -2,3 +2,4 @@ makefile
 build
 bin
 obj
+.vscode

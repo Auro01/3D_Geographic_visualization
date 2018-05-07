@@ -5,126 +5,76 @@
 #endif
 
 #include <stdlib.h>
-
 #include <iostream>
-using namespace std;
+#include <vector>
+#include <fstream>
+#include <sstream>
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "shapes.hpp"
+#include "mapdata.hpp"
 
-glm::dvec3 Unproject( const glm::dvec3& win )
-{
-    glm::ivec4 view;
-    glm::dmat4 proj, model;
-    glGetDoublev( GL_MODELVIEW_MATRIX, &model[0][0] );
-    glGetDoublev( GL_PROJECTION_MATRIX, &proj[0][0] );
-    glGetIntegerv( GL_VIEWPORT, &view[0] );
+using namespace std;
 
-    glm::dvec3 world = glm::unProject( win, model, proj, view );
-    return world;
-}
+vector<Object> objects;
+
+glm::dmat4 projection;
+glm::ivec4 view;
+glm::dmat4 camera;
+
+glm::dvec3 cameraPos;
+glm::dvec2 mousePos;
+
+vector<MapDataPoint> data;
 
 // unprojects the given window point
 // and finds the ray intersection with the Z=0 plane
 glm::dvec2 PlaneUnproject( const glm::dvec2& win )
 {
-    glm::dvec3 world1 = Unproject( glm::dvec3( win, 0.01 ) );
-    glm::dvec3 world2 = Unproject( glm::dvec3( win, 0.99 ) );
+    glm::dvec3 world1 = glm::unProject(glm::dvec3(win, 0.01), camera, projection, view);
+    glm::dvec3 world2 = glm::unProject(glm::dvec3(win, 0.99), camera, projection, view);
 
     // u is a value such that:
     // 0 = world1.z + u * ( world2.z - world1.z )
     double u = -world1.z / ( world2.z - world1.z );
+    
     // clamp u to reasonable values
-    if( u < 0 ) u = 0;
-    if( u > 1 ) u = 1;
+    if(u < 0)
+        u = 0;
+    else if(u > 1)
+        u = 1;
 
     return glm::dvec2( world1 + u * ( world2 - world1 ) );
 }
 
-// pixels per unit
-const double ppu = 1.0;
-
-glm::dvec2 center( 0 );
-double scale = 1.0;
-void ApplyCamera()
+void applyCamera()
 {
     glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
-    const double w = glutGet( GLUT_WINDOW_WIDTH ) / ppu;
-    const double h = glutGet( GLUT_WINDOW_HEIGHT ) / ppu;
-    glOrtho( -w/2, w/2, -h/2, h/2, -1, 1 );
-
+    glLoadMatrixd(&projection[0][0]);
+    
     glMatrixMode( GL_MODELVIEW );
-    glLoadIdentity();
-    glScaled( scale, scale, 1.0 );
-    glTranslated( -center[0], -center[1], 0 );
+    glLoadMatrixd(&camera[0][0]);
 }
-
-glm::dvec2 mPos;
-
-glm::dvec2 centerStart( 0 );
-int btn = -1;
 
 void mouse( int button, int state, int x, int y )
 {
-    ApplyCamera();
-
-    y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
-    mPos = glm::ivec2( x, y );
-
-    btn = button;
-    if( GLUT_LEFT_BUTTON == btn && GLUT_DOWN == state )
-    {
-        centerStart = PlaneUnproject( glm::dvec2( x, y ) );
-    }
-    if( GLUT_LEFT_BUTTON == btn && GLUT_UP == state )
-    {
-        btn = -1;
-    }
-
     glutPostRedisplay();
 }
 
 void motion( int x, int y )
 {
-    y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
-    mPos = glm::ivec2( x, y );
-
-    if( GLUT_LEFT_BUTTON == btn )
-    {
-        ApplyCamera();
-        glm::dvec2 cur = PlaneUnproject( glm::dvec2( x, y ) );
-        center += ( centerStart - cur );
-    }
-
     glutPostRedisplay();
 }
 
 void passiveMotion( int x, int y )
 {
-    y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
-    mPos = glm::ivec2( x, y );
     glutPostRedisplay();
 }
 
 void wheel( int wheel, int direction, int x, int y )
 {
-    y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
-    mPos = glm::ivec2( x, y );
-
-    ApplyCamera();
-    glm::dvec2 beforeZoom = PlaneUnproject( glm::dvec2( x, y ) );
-
-    const double scaleFactor = 0.90;
-    if( direction == -1 )   scale *= scaleFactor;
-    if( direction ==  1 )   scale /= scaleFactor;
-
-    ApplyCamera();
-    glm::dvec2 afterZoom = PlaneUnproject( glm::dvec2( x, y ) );
-
-    center += ( beforeZoom - afterZoom );
-
     glutPostRedisplay();
 }
 
@@ -133,37 +83,58 @@ void display()
     glClearColor( 0, 0, 0, 1 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    ApplyCamera();
+    applyCamera();
 
-    glm::dvec2 cur = PlaneUnproject( mPos );
-    cout << cur.x << " " << cur.y << " " << scale << endl;
+    auto object = objects.begin();
+    while(object != objects.end()) {
+        glPushMatrix();
+        glLoadMatrixd(&object->modelTrans[0][0]);
+        glBegin(GL_TRIANGLES);
+            for(auto vertex : object->verteces) {
+                glVertex3d(vertex.x, vertex.y, vertex.z);
+            }
+        glEnd();
+        glPopMatrix();
 
-    glPushMatrix();
-    glScalef( 50, 50, 1 );
-    glBegin( GL_QUADS );
-    glColor3ub( 255, 255, 255 );
-    glVertex2i( -1, -1 );
-    glVertex2i(  1, -1 );
-    glVertex2i(  1,  1 );
-    glVertex2i( -1,  1 );
-    glEnd();
-    glPopMatrix();
+        ++object;
+    }
 
     glutSwapBuffers();
+}
+
+void loadFile(char * name) {
+    ifstream file;
+    file.open(name);
+
+    string line;
+
+    while(getline(file, line)) {
+        auto lineStream = stringstream(line);
+        string latStr;
+        string lngStr;
+        string valStr;
+        getline(lineStream, latStr, ',');
+        getline(lineStream, lngStr, ',');
+        getline(lineStream, valStr, ',');
+
+        data.emplace();
+    }
 }
 
 int main( int argc, char **argv )
 {
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE );
-    glutInitWindowSize( 600, 600 );
+    glutInitWindowSize( 800, 600 );
     glutCreateWindow( "GLUT" );
 
     glutMouseFunc( mouse );
     glutMotionFunc( motion );
+    glutPassiveMotionFunc( passiveMotion );
     //glutMouseWheelFunc( wheel );
     glutDisplayFunc( display );
-    glutPassiveMotionFunc( passiveMotion );
+
+    loadFile(argv[1]);
 
     glutMainLoop();
     return 0;

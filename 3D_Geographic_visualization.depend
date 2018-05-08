@@ -10,6 +10,7 @@
 	<regex>
 	<limits>
 	<cmath>
+	"BmpLoader.h"
 	"glm/glm.hpp"
 	"glm/gtc/matrix_transform.hpp"
 	"shapes.hpp"
@@ -727,4 +728,22 @@
 	"glm/matrix.hpp"
 
 1525743304 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\mapdata.hpp
+
+1525763173 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\bmploader.h
+	<windows.h>
+
+1525763173 source:c:\users\eduardo salazar\documents\github\3d_geographic_visualization\bmploader.cpp
+	"BmpLoader.h"
+	<stdio.h>
+	<iostream>
+
+1341010376 c:\program files (x86)\codeblocks\mingw\include\stdio.h
+	<_mingw.h>
+	<stddef.h>
+	<stdarg.h>
+	<sys/types.h>
+
+1341010380 c:\program files (x86)\codeblocks\mingw\include\sys\types.h
+	<_mingw.h>
+	<stddef.h>
 

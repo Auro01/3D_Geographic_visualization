@@ -5,12 +5,14 @@
 #endif
 
 #include <stdlib.h>
+
 #include <iostream>
 #include <vector>
 #include <limits>
 #include <cmath>
 #include <cstring>
 
+#include "BmpLoader.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -18,9 +20,16 @@
 #include "mapdata.hpp"
 #include "util.hpp"
 
-using namespace std;
+unsigned int ID;
+const GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
+const GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat light_position[] = { -5.0f, 5.0f, 19.0f, 0.0f };
 
-vector<Object> objects;
+const GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
+const GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f };
+const GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat high_shininess[] = { 100.0f };
 
 glm::dmat4 projection;
 glm::dmat4 camera;
@@ -28,6 +37,7 @@ glm::ivec4 view;
 glm::dvec3 cameraPos;
 glm::dvec2 mouseClick;
 
+vector<Object> objects;
 vector<MapDataPoint> data;
 
 int subdiv = 0;
@@ -35,7 +45,6 @@ double camDist = 2.5;
 double camDistStep = 0.05;
 
 char sNombre[100];
-
 void mouse(int button, int state, int x, int y)
 {
     switch(button) {
@@ -107,12 +116,41 @@ void display()
     glutSwapBuffers();
 }
 
+void LoadTexture(const char *filename){
+    BmpLoader blLoader(filename);
+    glGenTextures(1,&ID);
+    glBindTexture(GL_TEXTURE_2D,ID);
+    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,blLoader.iWidth,blLoader.iHeight,GL_RGB,GL_UNSIGNED_BYTE,blLoader.textureData);
+}
+
 void idle()
 {
     glutPostRedisplay();
 }
 
 void init() {
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_LIGHTING);
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT,   mat_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE,   mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
+
     double radius = 2;
     double max = -numeric_limits<double>::infinity();
     double min = numeric_limits<double>::infinity();
@@ -146,7 +184,6 @@ void init() {
 
 int main(int argc, char **argv)
 {
-
     cout << "Nombre del archivo a utilizar:" << endl;
     cin >> sNombre;
     
@@ -158,6 +195,7 @@ int main(int argc, char **argv)
         glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
         glutInitWindowSize(width, height);
         glutCreateWindow("GLUT");
+        LoadTexture("map.bmp");
 
         cameraPos = glm::dvec3(0,0,1) * camDist;
         camera = glm::lookAt(cameraPos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));

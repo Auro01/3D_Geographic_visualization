@@ -11,6 +11,7 @@
 #include <sstream>
 #include <regex>
 #include <limits>
+#include <cmath>
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -18,24 +19,23 @@
 #include "shapes.hpp"
 #include "mapdata.hpp"
 
+#define PI   3.14159265
+#define PI_4 0.78539816
+
 using namespace std;
 
 vector<Object> objects;
 
 glm::dmat4 projection;
 glm::dmat4 camera;
-
 glm::ivec4 view;
-
 glm::dvec3 cameraPos;
-
-glm::ivec2 mousePos;
-glm::ivec2 mouseClick;
+glm::dvec2 mouseClick;
 
 vector<MapDataPoint> data;
 
-int subdiv = 6;
-double camDist = 1;
+int subdiv = 0;
+double camDist = 2.5;
 double camDistStep = 0.05;
 
 void mouse(int button, int state, int x, int y)
@@ -71,18 +71,19 @@ void mouse(int button, int state, int x, int y)
 
 void motion(int x, int y)
 {
+    auto diff = mouseClick - glm::dvec2(x, y);
+    
+    cameraPos = glm::normalize(cameraPos + glm::dvec3(diff,0.0)) * camDist;
 
-    glutPostRedisplay();
-}
-
-void passiveMotion(int x, int y)
-{
     glutPostRedisplay();
 }
 
 void reshape(int width, int height)
 {
     projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);
+    view = glm::dvec4(0.0, 0.0, width, height);
+
+    glViewport(0, 0, width, height);
     glutPostRedisplay();
 }
 
@@ -131,8 +132,8 @@ void init() {
     sphere(glm::dvec3(0,0,0), radius, subdiv, objects);
 
     for(auto & point : data) {   
-        auto theta = point.latitude * M_PI / 360;
-        auto phi = point.longitude * M_PI / 360;
+        auto theta = point.latitude * PI / 360;
+        auto phi = point.longitude * PI / 360;
 
         auto x = radius * sin(theta) * sin(phi);
         auto y = radius * cos(theta);
@@ -160,6 +161,11 @@ void loadFile(char * name) {
     }
 }
 
+void idle()
+{
+    glutPostRedisplay();
+}
+
 int main(int argc, char **argv)
 {
     if(argc > 1) {
@@ -174,12 +180,13 @@ int main(int argc, char **argv)
         cameraPos = glm::dvec3(0,0,1) * camDist;
         camera = glm::lookAt(cameraPos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));
         projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);
+        view = glm::dvec4(0,0,width,height);
 
         glutMouseFunc(mouse);
         glutMotionFunc(motion);
-        glutPassiveMotionFunc(passiveMotion);
         glutDisplayFunc(display);
         glutReshapeFunc(reshape);
+        glutIdleFunc(idle);
         
         loadFile(argv[1]);
         init();

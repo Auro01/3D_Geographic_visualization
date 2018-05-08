@@ -3,9 +3,13 @@
 
 #include <vector>
 #include <queue>
+#include <cmath>
 
 #include "glm/vec3.hpp"
 #include "glm/matrix.hpp"
+
+#define PI   3.14159265
+#define PI_4 0.78539816
 
 using namespace std;
 
@@ -17,10 +21,10 @@ struct Object {
 void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
     // Octahedron
     auto top = center + glm::dvec3(0, radius, 0);
-    auto nearRight = center + glm::dvec3(radius * sin(M_PI_4), 0, radius * cos(M_PI_4));
-    auto farRight = center + glm::dvec3(radius * sin(3 * M_PI_4), 0, radius * cos(3 * M_PI_4));  
-    auto farLeft = center + glm::dvec3(radius * sin(5 * M_PI_4), 0, radius * cos(5 * M_PI_4));  
-    auto nearLeft = center + glm::dvec3(radius * sin(7 * M_PI_4), 0, radius * cos(7 * M_PI_4));
+    auto nearRight = center + glm::dvec3(radius * sin(PI_4), 0, radius * cos(PI_4));
+    auto farRight = center + glm::dvec3(radius * sin(3 * PI_4), 0, radius * cos(3 * PI_4));  
+    auto farLeft = center + glm::dvec3(radius * sin(5 * PI_4), 0, radius * cos(5 * PI_4));  
+    auto nearLeft = center + glm::dvec3(radius * sin(7 * PI_4), 0, radius * cos(7 * PI_4));
     auto bottom = center + glm::dvec3(0, -radius, 0);
 
     queue<glm::dvec3> sphere;

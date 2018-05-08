@@ -19,8 +19,8 @@ void saveToObj(vector<Object> & objects, char * sNombre)
     char sAux[100];
     auto n = strlen(sNombre) - 4;
 
-    strncpy(sAux, sNombre, n);
-    strcat(sAux, ".obj");
+    strcpy(sAux, sNombre);
+    strcpy(sAux + n, ".obj");
 
     ofstream myfile(sAux);
     int iVertices = 1;
@@ -29,8 +29,6 @@ void saveToObj(vector<Object> & objects, char * sNombre)
         while(object != objects.end()) {
             for(auto & vertex : object->vertices) {
                 myfile<<"v"<<" "<<vertex.x<<" "<<vertex.y<<" "<<vertex.z<<"\n";
-                cout<<"v"<<" "<<vertex.x<<" "<<vertex.y<<" "<<vertex.z<<"\n";
-                cout<<iVertices<<endl;
                 if(iVertices%3 == 0){
                     myfile<<"\n";
                     myfile<<"f"<<" "<<iVertices-2<<" "<<iVertices-1<<" "<<iVertices<<"\n";

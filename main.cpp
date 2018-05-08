@@ -39,7 +39,7 @@ glm::dvec2 mouseClick;
 vector<Object> objects;
 vector<MapDataPoint> data;
 
-int subdiv = 6;
+int subdiv = 0;
 double camDist = 3;
 double camDistStep = 0.05;
 double camTheta = 0;
@@ -112,9 +112,7 @@ void motion(int x, int y)
         camPhi = PI;
 
     updateCam();
-
-    mouseClick = position;
-
+    
     glutPostRedisplay();
 }
 
@@ -199,6 +197,7 @@ void init() {
     for(auto & point : data) {
         auto theta = point.latitude * PI / 360;
         auto phi = point.longitude * PI / 360;
+        auto width = 0.2;
 
         auto x = radius * sin(theta) * sin(phi);
         auto y = radius * cos(theta);
@@ -206,7 +205,7 @@ void init() {
 
         auto pos = glm::dvec3(x,y,z);
         
-        //marker(pos, point.value * norm, glm::normalize(pos), subdiv, objects);
+        marker(pos, width, point.value * norm, glm::normalize(pos), subdiv, objects);
     }
 }
 static void key(unsigned char key, int x, int y)
@@ -222,6 +221,19 @@ static void key(unsigned char key, int x, int y)
         case 's':
             saveToObj(objects, sNombre);
             break;
+
+        case GLUT_KEY_UP:
+            subdiv += 1;
+
+            if(subdiv > 10)
+                subdiv = 10;
+            break;
+
+        case GLUT_KEY_DOWN:
+            subdiv -= 1;
+
+            if(subdiv < 0)
+                subdiv = 0;
     }
 
     glutPostRedisplay();
@@ -244,7 +256,7 @@ int main(int argc, char **argv)
         glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
         glutInitWindowSize(width, height);
         glutCreateWindow("GLUT");
-        LoadTexture("map.bmp");
+        LoadTexture("world.bmp");
 
         updateCam();
         projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);

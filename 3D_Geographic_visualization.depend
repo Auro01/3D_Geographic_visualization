@@ -1,20 +1,19 @@
 # depslib dependency file v1.0
-1525772902 source:c:\users\eduardo salazar\documents\github\3d_geographic_visualization\main.cpp
+1525788116 source:c:\users\eduardo salazar\documents\github\3d_geographic_visualization\main.cpp
 	<GLUT/glut.h>
 	<GL/glut.h>
 	<stdlib.h>
 	<iostream>
 	<vector>
-	<fstream>
-	<sstream>
-	<regex>
 	<limits>
 	<cmath>
+	<cstring>
 	"BmpLoader.h"
 	"glm/glm.hpp"
 	"glm/gtc/matrix_transform.hpp"
 	"shapes.hpp"
 	"mapdata.hpp"
+	"util.hpp"
 
 1426374928 c:\program files (x86)\codeblocks\mingw\include\gl\glut.h
 	"freeglut_std.h"
@@ -720,19 +719,24 @@
 	"func_vector_relational.hpp"
 	"func_integer.inl"
 
-1525766822 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\shapes.hpp
+1525784936 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\shapes.hpp
 	<vector>
 	<queue>
 	<cmath>
 	"glm/vec3.hpp"
 	"glm/matrix.hpp"
 
-1525743304 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\mapdata.hpp
+1525784936 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\mapdata.hpp
+	<fstream>
+	<sstream>
+	<regex>
+	<vector>
 
-1525763173 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\bmploader.h
+1525785893 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\bmploader.h
 	<windows.h>
+	"bitmap.h"
 
-1525763173 source:c:\users\eduardo salazar\documents\github\3d_geographic_visualization\bmploader.cpp
+1525785893 source:c:\users\eduardo salazar\documents\github\3d_geographic_visualization\bmploader.cpp
 	"BmpLoader.h"
 	<stdio.h>
 	<iostream>
@@ -746,4 +750,23 @@
 1341010380 c:\program files (x86)\codeblocks\mingw\include\sys\types.h
 	<_mingw.h>
 	<stddef.h>
+
+1525785893 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\bitmap.h
+
+1525784936 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\util.hpp
+	<iostream>
+	<vector>
+	<fstream>
+	<cstring>
+	"glm/vec3.hpp"
+	"glm/matrix.hpp"
+	"glm/gtx/transform.hpp"
+	"shapes.hpp"
+
+1525743116 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\glm\gtx\transform.hpp
+	"../glm.hpp"
+	"../gtc/matrix_transform.hpp"
+	"transform.inl"
+
+1525743116 c:\users\eduardo salazar\documents\github\3d_geographic_visualization\glm\gtx\transform.inl
 

@@ -35,6 +35,49 @@ int subdiv = 0;
 double camDist = 2.5;
 double camDistStep = 0.05;
 
+char  sNombre[100];
+
+
+
+void saveToObj(){
+    char  sAux[100];
+    int len = strlen(sNombre);
+    for(int i=0;i<len-4;i++){
+        sAux[i]=sNombre[i];
+    }
+    sAux[len-4] = '.';
+    sAux[len-3] = 'o';
+    sAux[len-2] = 'b';
+    sAux[len-1] = 'j';
+    sAux[len+1] = '\0';
+    cout<<"hi"<<sAux[len-4]<<"   "<<len<<endl;
+    ofstream myfile(sAux);
+    int iVertices = 1;
+    if(myfile.is_open()){
+
+    auto object = objects.begin();
+    while(object != objects.end()) {
+        for(auto & vertex : object->verteces) {
+            myfile<<"v"<<" "<<vertex.x<<" "<<vertex.y<<" "<<vertex.z<<"\n";
+            cout<<"v"<<" "<<vertex.x<<" "<<vertex.y<<" "<<vertex.z<<"\n";
+            cout<<iVertices<<endl;
+            if(iVertices%3 == 0){
+            myfile<<"\n";
+            myfile<<"f"<<" "<<iVertices-2<<" "<<iVertices-1<<" "<<iVertices<<"\n";
+            myfile<<"\n";
+            }
+            iVertices++;
+        }
+
+        ++object;
+
+    }
+    }
+    else cout << "Unable to open file";
+    myfile.close();
+
+}
+
 void mouse(int button, int state, int x, int y)
 {
     switch(button) {
@@ -45,6 +88,9 @@ void mouse(int button, int state, int x, int y)
         case GLUT_MIDDLE_BUTTON:
             break;
         case GLUT_RIGHT_BUTTON:
+            if(state == GLUT_DOWN) {
+            saveToObj();
+            }
             break;
         case 3: // SCROLL UP
             if(state == GLUT_DOWN) {
@@ -62,14 +108,14 @@ void mouse(int button, int state, int x, int y)
 
     cameraPos = glm::normalize(cameraPos) * camDist;
     camera = glm::lookAt(cameraPos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));
-    
+
     glutPostRedisplay();
 }
 
 void motion(int x, int y)
 {
     auto diff = mouseClick - glm::dvec2(x, y);
-    
+
     cameraPos = glm::normalize(cameraPos + glm::dvec3(diff,0.0)) * camDist;
 
     glutPostRedisplay();
@@ -91,7 +137,7 @@ void display()
 
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixd(&projection[0][0]);
-    
+
     glMatrixMode(GL_MODELVIEW);
 
     auto object = objects.begin();
@@ -110,16 +156,18 @@ void display()
     glutSwapBuffers();
 }
 
+
+
 void init() {
     double radius = 2;
     double max = -numeric_limits<double>::infinity();
     double min = numeric_limits<double>::infinity();
     double norm;
-    
+
     for(auto & point : data) {
         if(point.value > max)
             max = point.value;
-        
+
         if(point.value < min)
             min = point.value;
     }
@@ -128,14 +176,14 @@ void init() {
 
     sphere(glm::dvec3(0,0,0), radius, subdiv, objects);
 
-    for(auto & point : data) {   
+    for(auto & point : data) {
         auto theta = point.latitude * PI / 360;
         auto phi = point.longitude * PI / 360;
 
         auto x = radius * sin(theta) * sin(phi);
         auto y = radius * cos(theta);
         auto z = radius * sin(theta) * cos(phi);
-        
+
         marker(glm::dvec3(x,y,z), point.value * norm, subdiv, objects);
     }
 }
@@ -165,7 +213,10 @@ void idle()
 
 int main(int argc, char **argv)
 {
-    if(argc > 1) {
+
+    cout<<"Nombre del archivo a utilizar:"<<endl;
+    cin>>sNombre;
+    if(sNombre != "") {
         int width = 800;
         int height = 600;
 
@@ -184,8 +235,8 @@ int main(int argc, char **argv)
         glutDisplayFunc(display);
         glutReshapeFunc(reshape);
         glutIdleFunc(idle);
-        
-        loadFile(argv[1]);
+
+        loadFile(sNombre);
         init();
 
         glutMainLoop();

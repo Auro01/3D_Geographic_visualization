@@ -67,9 +67,6 @@ void mouse(int button, int state, int x, int y)
         case GLUT_MIDDLE_BUTTON:
             break;
         case GLUT_RIGHT_BUTTON:
-            if(state == GLUT_DOWN) {
-                saveToObj(objects, sNombre);
-            }
             break;
         case 3: // SCROLL UP
             if(state == GLUT_DOWN) {
@@ -206,11 +203,28 @@ void init() {
         auto x = radius * sin(theta) * sin(phi);
         auto y = radius * cos(theta);
         auto z = radius * sin(theta) * cos(phi);
-        
+
         auto pos = glm::dvec3(x,y,z);
         
         //marker(pos, point.value * norm, glm::normalize(pos), subdiv, objects);
     }
+}
+static void key(unsigned char key, int x, int y)
+{
+    switch (key)
+    {
+        case 27 :
+
+        case 'q':
+            exit(0);
+            break;
+
+        case 's':
+            saveToObj(objects, sNombre);
+            break;
+    }
+
+    glutPostRedisplay();
 }
 
 int main(int argc, char **argv)
@@ -236,6 +250,7 @@ int main(int argc, char **argv)
         projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);
         view = glm::dvec4(0,0,width,height);
 
+        glutKeyboardFunc(key);
         glutMouseFunc(mouse);
         glutMotionFunc(motion);
         glutDisplayFunc(display);

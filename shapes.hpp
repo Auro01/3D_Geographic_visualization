@@ -16,7 +16,18 @@ using namespace std;
 struct Object {
     vector<glm::dvec3> verteces;
     glm::dmat4 modelTrans;
+    void draw(const glm::dmat4 & camera);
 };
+
+void Object::draw(const glm::dmat4 & camera) {
+    glm::dmat4 modelView = camera * this->modelTrans;
+    glLoadMatrixd(&modelView[0][0]);
+    glBegin(GL_TRIANGLES);
+        for(auto & vertex : this->verteces) {
+            glVertex3d(vertex.x, vertex.y, vertex.z);
+        }
+    glEnd();
+}
 
 void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
     // Octahedron
@@ -79,7 +90,7 @@ void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
     }
 }
 
-void marker(glm::dvec3 center, double height, int n, vector<Object> & objects) {
+void marker(glm::dvec3 center, double height, glm::dvec3 direction, int n, vector<Object> & objects) {
 
 }
 

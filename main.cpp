@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <limits>
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -22,85 +23,123 @@ using namespace std;
 vector<Object> objects;
 
 glm::dmat4 projection;
-glm::ivec4 view;
 glm::dmat4 camera;
 
+glm::ivec4 view;
+
 glm::dvec3 cameraPos;
-glm::dvec2 mousePos;
+
+glm::ivec2 mousePos;
+glm::ivec2 mouseClick;
 
 vector<MapDataPoint> data;
 
-// unprojects the given window point
-// and finds the ray intersection with the Z=0 plane
-glm::dvec2 PlaneUnproject( const glm::dvec2& win )
-{
-    glm::dvec3 world1 = glm::unProject(glm::dvec3(win, 0.01), camera, projection, view);
-    glm::dvec3 world2 = glm::unProject(glm::dvec3(win, 0.99), camera, projection, view);
+int subdiv = 6;
+double camDist = 1;
+double camDistStep = 0.05;
 
-    // u is a value such that:
-    // 0 = world1.z + u * ( world2.z - world1.z )
-    double u = -world1.z / ( world2.z - world1.z );
+void mouse(int button, int state, int x, int y)
+{
+    switch(button) {
+        case GLUT_LEFT_BUTTON:
+            if(state == GLUT_DOWN) {
+                mouseClick = glm::ivec2(x,y);
+            }
+        case GLUT_MIDDLE_BUTTON:
+            break;
+        case GLUT_RIGHT_BUTTON:
+            break;
+        case 3: // SCROLL UP
+            if(state == GLUT_DOWN) {
+                camDist += camDistStep;
+            }
+            break;
+        case 4: // SCROLL DOUW
+            if(state == GLUT_DOWN) {
+                camDist -= camDistStep;
+                if(camDist < 0.1)
+                    camDist = 0.1;
+            }
+            break;
+    }
+
+    cameraPos = glm::normalize(cameraPos) * camDist;
+    camera = glm::lookAt(cameraPos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));
     
-    // clamp u to reasonable values
-    if(u < 0)
-        u = 0;
-    else if(u > 1)
-        u = 1;
-
-    return glm::dvec2( world1 + u * ( world2 - world1 ) );
+    glutPostRedisplay();
 }
 
-void applyCamera()
+void motion(int x, int y)
 {
-    glMatrixMode( GL_PROJECTION );
-    glLoadMatrixd(&projection[0][0]);
-    
-    glMatrixMode( GL_MODELVIEW );
-    glLoadMatrixd(&camera[0][0]);
+
+    glutPostRedisplay();
 }
 
-void mouse( int button, int state, int x, int y )
+void passiveMotion(int x, int y)
 {
     glutPostRedisplay();
 }
 
-void motion( int x, int y )
+void reshape(int width, int height)
 {
-    glutPostRedisplay();
-}
-
-void passiveMotion( int x, int y )
-{
-    glutPostRedisplay();
-}
-
-void wheel( int wheel, int direction, int x, int y )
-{
+    projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);
     glutPostRedisplay();
 }
 
 void display()
 {
-    glClearColor( 0, 0, 0, 1 );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    applyCamera();
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixd(&projection[0][0]);
+    
+    glMatrixMode(GL_MODELVIEW);
 
     auto object = objects.begin();
     while(object != objects.end()) {
-        glPushMatrix();
-        glLoadMatrixd(&object->modelTrans[0][0]);
+        glm::dmat4 modelView = camera * object->modelTrans;
+        glLoadMatrixd(&modelView[0][0]);
         glBegin(GL_TRIANGLES);
-            for(auto vertex : object->verteces) {
+            for(auto & vertex : object->verteces) {
                 glVertex3d(vertex.x, vertex.y, vertex.z);
             }
         glEnd();
-        glPopMatrix();
 
         ++object;
     }
 
     glutSwapBuffers();
+}
+
+void init() {
+    double radius = 2;
+    double max = -numeric_limits<double>::infinity();
+    double min = numeric_limits<double>::infinity();
+    double norm;
+    
+    for(auto & point : data) {
+        if(point.value > max)
+            max = point.value;
+        
+        if(point.value < min)
+            min = point.value;
+    }
+
+    norm = 1 / (max - min);
+
+    sphere(glm::dvec3(0,0,0), radius, subdiv, objects);
+
+    for(auto & point : data) {   
+        auto theta = point.latitude * M_PI / 360;
+        auto phi = point.longitude * M_PI / 360;
+
+        auto x = radius * sin(theta) * sin(phi);
+        auto y = radius * cos(theta);
+        auto z = radius * sin(theta) * cos(phi);
+        
+        marker(glm::dvec3(x,y,z), point.value * norm, subdiv, objects);
+    }
 }
 
 void loadFile(char * name) {
@@ -121,29 +160,35 @@ void loadFile(char * name) {
     }
 }
 
-int main( int argc, char **argv )
+int main(int argc, char **argv)
 {
-    glutInit( &argc, argv );
-    glutInitDisplayMode( GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE );
-    glutInitWindowSize( 800, 600 );
-    glutCreateWindow( "GLUT" );
-
-    glutMouseFunc( mouse );
-    glutMotionFunc( motion );
-    glutPassiveMotionFunc( passiveMotion );
-    //glutMouseWheelFunc( wheel );
-    glutDisplayFunc( display );
-
     if(argc > 1) {
+        int width = 800;
+        int height = 600;
+
+        glutInit(&argc, argv);
+        glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
+        glutInitWindowSize(width, height);
+        glutCreateWindow("GLUT");
+
+        cameraPos = glm::dvec3(0,0,1) * camDist;
+        camera = glm::lookAt(cameraPos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));
+        projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);
+
+        glutMouseFunc(mouse);
+        glutMotionFunc(motion);
+        glutPassiveMotionFunc(passiveMotion);
+        glutDisplayFunc(display);
+        glutReshapeFunc(reshape);
+        
         loadFile(argv[1]);
+        init();
 
-        for(auto point : data) {
-            cout << point.latitude << '\t';
-            cout << point.longitude << '\t';
-            cout << point.value << endl;
-        }
-
-        //glutMainLoop();
+        glutMainLoop();
+    } else {
+        cout << "No input file" << endl << endl;
+        cout << "Usage: " << endl;
+        cout << argv[0] << " file" << endl;
     }
     return 0;
 }

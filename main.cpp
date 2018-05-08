@@ -19,9 +19,6 @@
 #include "shapes.hpp"
 #include "mapdata.hpp"
 
-#define PI   3.14159265
-#define PI_4 0.78539816
-
 using namespace std;
 
 vector<Object> objects;

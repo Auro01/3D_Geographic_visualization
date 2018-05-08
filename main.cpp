@@ -5,145 +5,184 @@
 #endif
 
 #include <stdlib.h>
+
 #include <iostream>
-#include <vector>
-#include <fstream>
-#include <sstream>
-#include <regex>
+using namespace std;
+#include "BmpLoader.h"
 
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
-#include "shapes.hpp"
-#include "mapdata.hpp"
 
-using namespace std;
 
-vector<Object> objects;
+unsigned int ID;
 
-glm::dmat4 projection;
-glm::ivec4 view;
-glm::dmat4 camera;
 
-glm::dvec3 cameraPos;
-glm::dvec2 mousePos;
+glm::dvec3 Unproject( const glm::dvec3& win )
+{
+    glm::ivec4 view;
+    glm::dmat4 proj, model;
+    glGetDoublev( GL_MODELVIEW_MATRIX, &model[0][0] );
+    glGetDoublev( GL_PROJECTION_MATRIX, &proj[0][0] );
+    glGetIntegerv( GL_VIEWPORT, &view[0] );
 
-vector<MapDataPoint> data;
+    glm::dvec3 world = glm::unProject( win, model, proj, view );
+    return world;
+}
 
 // unprojects the given window point
 // and finds the ray intersection with the Z=0 plane
 glm::dvec2 PlaneUnproject( const glm::dvec2& win )
 {
-    glm::dvec3 world1 = glm::unProject(glm::dvec3(win, 0.01), camera, projection, view);
-    glm::dvec3 world2 = glm::unProject(glm::dvec3(win, 0.99), camera, projection, view);
+    glm::dvec3 world1 = Unproject( glm::dvec3( win, 0.01 ) );
+    glm::dvec3 world2 = Unproject( glm::dvec3( win, 0.99 ) );
 
     // u is a value such that:
     // 0 = world1.z + u * ( world2.z - world1.z )
     double u = -world1.z / ( world2.z - world1.z );
-    
     // clamp u to reasonable values
-    if(u < 0)
-        u = 0;
-    else if(u > 1)
-        u = 1;
+    if( u < 0 ) u = 0;
+    if( u > 1 ) u = 1;
 
     return glm::dvec2( world1 + u * ( world2 - world1 ) );
 }
 
-void applyCamera()
+// pixels per unit
+const double ppu = 1.0;
+
+glm::dvec2 center( 0 );
+double scale = 1.0;
+void ApplyCamera()
 {
     glMatrixMode( GL_PROJECTION );
-    glLoadMatrixd(&projection[0][0]);
-    
+    glLoadIdentity();
+    const double w = glutGet( GLUT_WINDOW_WIDTH ) / ppu;
+    const double h = glutGet( GLUT_WINDOW_HEIGHT ) / ppu;
+    glOrtho( -w/2, w/2, -h/2, h/2, -1, 1 );
+
     glMatrixMode( GL_MODELVIEW );
-    glLoadMatrixd(&camera[0][0]);
+    glLoadIdentity();
+    glScaled( scale, scale, 1.0 );
+    glTranslated( -center[0], -center[1], 0 );
 }
+
+glm::dvec2 mPos;
+
+glm::dvec2 centerStart( 0 );
+int btn = -1;
 
 void mouse( int button, int state, int x, int y )
 {
+    ApplyCamera();
+
+    y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
+    mPos = glm::ivec2( x, y );
+
+    btn = button;
+    if( GLUT_LEFT_BUTTON == btn && GLUT_DOWN == state )
+    {
+        centerStart = PlaneUnproject( glm::dvec2( x, y ) );
+    }
+    if( GLUT_LEFT_BUTTON == btn && GLUT_UP == state )
+    {
+        btn = -1;
+    }
+    if ((button == 3) || (button == 4)) // It's a wheel event
+   {
+       // Each wheel event reports like a button click, GLUT_DOWN then GLUT_UP
+       if (state == GLUT_UP) return; // Disregard redundant GLUT_UP events
+       y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
+    mPos = glm::ivec2( x, y );
+
+    ApplyCamera();
+    glm::dvec2 beforeZoom = PlaneUnproject( glm::dvec2( x, y ) );
+
+    const double scaleFactor = 0.90;
+    if( button == 3 )   scale /= scaleFactor;
+    if( button == 4 )   scale *= scaleFactor;
+
+    ApplyCamera();
+    glm::dvec2 afterZoom = PlaneUnproject( glm::dvec2( x, y ) );
+
+    center += ( beforeZoom - afterZoom );
+
+   }
+
     glutPostRedisplay();
 }
 
 void motion( int x, int y )
 {
+    y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
+    mPos = glm::ivec2( x, y );
+
+    if( GLUT_LEFT_BUTTON == btn )
+    {
+        ApplyCamera();
+        glm::dvec2 cur = PlaneUnproject( glm::dvec2( x, y ) );
+        center += ( centerStart - cur );
+    }
+
     glutPostRedisplay();
 }
 
 void passiveMotion( int x, int y )
 {
+    y = glutGet( GLUT_WINDOW_HEIGHT ) - y;
+    mPos = glm::ivec2( x, y );
     glutPostRedisplay();
 }
+void LoadTexture(const char *filename){
+    BmpLoader blLoader(filename);
+    glGenTextures(1,&ID);
+    glBindTexture(GL_TEXTURE_2D,ID);
+    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,blLoader.iWidth,blLoader.iHeight,GL_RGB,GL_UNSIGNED_BYTE,blLoader.textureData);
 
-void wheel( int wheel, int direction, int x, int y )
-{
-    glutPostRedisplay();
+
 }
 
 void display()
 {
-    glClearColor( 0, 0, 0, 1 );
+    glEnable(GL_TEXTURE_2D);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    applyCamera();
 
-    auto object = objects.begin();
-    while(object != objects.end()) {
-        glPushMatrix();
-        glLoadMatrixd(&object->modelTrans[0][0]);
-        glBegin(GL_TRIANGLES);
-            for(auto vertex : object->verteces) {
-                glVertex3d(vertex.x, vertex.y, vertex.z);
-            }
-        glEnd();
-        glPopMatrix();
+    ApplyCamera();
 
-        ++object;
-    }
+    glPushMatrix();
+    glScalef( 50, 50, 1 );
+    glBegin( GL_QUADS );
+    glColor3ub( 255, 255, 255 );
+     glTexCoord2f(1.0,1.0); glVertex3f(1.0,1.0,0.0);
+                glTexCoord2f(0.0,1.0); glVertex3f(-1.0,1.0,0.0);
+                glTexCoord2f(0.0,0.0); glVertex3f(-1.0,-1.0,0.0);
+                glTexCoord2f(1.0,0.0); glVertex3f(1.0,-1.0,0.0);
+    glEnd();
+    glPopMatrix();
 
     glutSwapBuffers();
-}
-
-void loadFile(char * name) {
-    ifstream file;
-    smatch matches;
-    string line;
-    regex expr("(\\d+(?:\\.\\d*)?),(\\d+(?:\\.\\d*)?),(\\d+(?:\\.\\d*)?)");
-
-    file.open(name);
-
-    while(getline(file, line)) {
-        if(regex_match(line,matches, expr)) {
-            double lat = stod(string(matches[1].first, matches[1].second));
-            double lng = stod(string(matches[2].first, matches[2].second));
-            double val = stod(string(matches[3].first, matches[3].second));
-            data.emplace_back(lat, lng, val);
-        }
-    }
+    glDisable(GL_TEXTURE_2D);
 }
 
 int main( int argc, char **argv )
 {
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE );
-    glutInitWindowSize( 800, 600 );
+    glutInitWindowSize( 600, 600 );
     glutCreateWindow( "GLUT" );
+    LoadTexture("tex.bmp");
 
     glutMouseFunc( mouse );
     glutMotionFunc( motion );
-    glutPassiveMotionFunc( passiveMotion );
     //glutMouseWheelFunc( wheel );
     glutDisplayFunc( display );
+    glutPassiveMotionFunc( passiveMotion );
 
-    if(argc > 1) {
-        loadFile(argv[1]);
-
-        for(auto point : data) {
-            cout << point.latitude << '\t';
-            cout << point.longitude << '\t';
-            cout << point.value << endl;
-        }
-
-        //glutMainLoop();
-    }
+    glutMainLoop();
     return 0;
 }

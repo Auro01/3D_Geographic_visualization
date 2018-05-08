@@ -27,7 +27,7 @@ void saveToObj(vector<Object> & objects, char * sNombre)
     if(myfile.is_open()){
         auto object = objects.begin();
         while(object != objects.end()) {
-            for(auto & vertex : object->verteces) {
+            for(auto & vertex : object->vertices) {
                 myfile<<"v"<<" "<<vertex.x<<" "<<vertex.y<<" "<<vertex.z<<"\n";
                 cout<<"v"<<" "<<vertex.x<<" "<<vertex.y<<" "<<vertex.z<<"\n";
                 cout<<iVertices<<endl;

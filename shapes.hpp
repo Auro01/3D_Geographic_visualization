@@ -14,7 +14,7 @@
 using namespace std;
 
 struct Object {
-    vector<glm::dvec3> verteces;
+    vector<glm::dvec3> vertices;
     glm::dmat4 modelTrans;
     void draw(const glm::dmat4 & camera);
 };
@@ -23,7 +23,7 @@ void Object::draw(const glm::dmat4 & camera) {
     glm::dmat4 modelView = camera * this->modelTrans;
     glLoadMatrixd(&modelView[0][0]);
     glBegin(GL_TRIANGLES);
-        for(auto & vertex : this->verteces) {
+        for(auto & vertex : this->vertices) {
             glVertex3d(vertex.x, vertex.y, vertex.z);
         }
     glEnd();
@@ -85,13 +85,21 @@ void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
     Object & object = objects.back();
 
     while(!sphere.empty()) {
-        object.verteces.push_back(sphere.front());
+        object.vertices.push_back(sphere.front());
         sphere.pop();
     }
 }
 
-void marker(glm::dvec3 center, double height, glm::dvec3 direction, int n, vector<Object> & objects) {
-
+void marker(glm::dvec3 center, double side, double height, glm::dvec3 direction, int n, vector<Object> & objects) {
+    auto len = side / 2;
+    auto lfr = center + glm::dvec3(len, 0, -len);
+    auto lfl = center + glm::dvec3(-len, 0, -len);
+    auto lnr = center + glm::dvec3(len, 0, len);
+    auto lnl = center + glm::dvec3(-len, 0, len);
+    auto ufr = lfr + glm::dvec3(0, height, 0);
+    auto ufl = lfl + glm::dvec3(0, height, 0);
+    auto unr = lnr + glm::dvec3(0, height, 0);
+    auto unl = lnl + glm::dvec3(0, height, 0);
 }
 
 #endif

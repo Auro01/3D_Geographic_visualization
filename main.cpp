@@ -16,6 +16,15 @@ using namespace std;
 
 
 unsigned int ID;
+const GLfloat light_ambient[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
+const GLfloat light_diffuse[]  = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat light_position[] = { -5.0f, 5.0f, 19.0f, 0.0f };
+
+const GLfloat mat_ambient[]    = { 0.7f, 0.7f, 0.7f, 1.0f };
+const GLfloat mat_diffuse[]    = { 0.8f, 0.8f, 0.8f, 1.0f };
+const GLfloat mat_specular[]   = { 1.0f, 1.0f, 1.0f, 1.0f };
+const GLfloat high_shininess[] = { 100.0f };
 
 
 glm::dvec3 Unproject( const glm::dvec3& win )
@@ -155,10 +164,11 @@ void display()
     ApplyCamera();
 
     glPushMatrix();
-    glScalef( 50, 50, 1 );
+    glScalef( 250, 250, 1 );
     glBegin( GL_QUADS );
     glColor3ub( 255, 255, 255 );
-     glTexCoord2f(1.0,1.0); glVertex3f(1.0,1.0,0.0);
+     glTexCoord2f(1.0,1.0);
+                glVertex3f(1.0,1.0,0.0);
                 glTexCoord2f(0.0,1.0); glVertex3f(-1.0,1.0,0.0);
                 glTexCoord2f(0.0,0.0); glVertex3f(-1.0,-1.0,0.0);
                 glTexCoord2f(1.0,0.0); glVertex3f(1.0,-1.0,0.0);
@@ -169,19 +179,40 @@ void display()
     glDisable(GL_TEXTURE_2D);
 }
 
+void init(){
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_LIGHTING);
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT,  light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE,  light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT,   mat_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE,   mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
+}
+
 int main( int argc, char **argv )
 {
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE );
     glutInitWindowSize( 600, 600 );
     glutCreateWindow( "GLUT" );
-    LoadTexture("tex.bmp");
+    LoadTexture("map.bmp");
 
     glutMouseFunc( mouse );
     glutMotionFunc( motion );
     //glutMouseWheelFunc( wheel );
     glutDisplayFunc( display );
     glutPassiveMotionFunc( passiveMotion );
+
+    init();
 
     glutMainLoop();
     return 0;

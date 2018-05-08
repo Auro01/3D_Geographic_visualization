@@ -34,24 +34,35 @@ const GLfloat high_shininess[] = { 100.0f };
 glm::dmat4 projection;
 glm::dmat4 camera;
 glm::ivec4 view;
-glm::dvec3 cameraPos;
 glm::dvec2 mouseClick;
 
 vector<Object> objects;
 vector<MapDataPoint> data;
 
 int subdiv = 0;
-double camDist = 2.5;
+double camDist = 3;
 double camDistStep = 0.05;
+double camTheta = 0;
+double camPhi = 0;
 
 char sNombre[100];
+
+void updateCam() {
+    auto x = camDist * sin(camTheta) * sin(camPhi);
+    auto y = camDist * sin(camTheta) * cos(camPhi);
+    auto z = camDist * cos(camTheta);
+
+    auto pos = glm::dvec3(x,y,z);
+
+    camera = glm::lookAt(pos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));
+}
+
 void mouse(int button, int state, int x, int y)
 {
     switch(button) {
         case GLUT_LEFT_BUTTON:
             if(state == GLUT_DOWN) {
-                y = view[3] - y;
-                mouseClick = planeUnproject(glm::dvec2(x, y), camera, projection, view);
+                mouseClick = glm::dvec2(x, y);
             }
         case GLUT_MIDDLE_BUTTON:
             break;
@@ -63,6 +74,7 @@ void mouse(int button, int state, int x, int y)
         case 3: // SCROLL UP
             if(state == GLUT_DOWN) {
                 camDist += camDistStep;
+                updateCam();
             }
             break;
         case 4: // SCROLL DOUW
@@ -70,22 +82,37 @@ void mouse(int button, int state, int x, int y)
                 camDist -= camDistStep;
                 if(camDist < 0.1)
                     camDist = 0.1;
+                updateCam();
             }
             break;
     }
 
-    cameraPos = glm::normalize(cameraPos) * camDist;
-    camera = glm::lookAt(cameraPos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));
 
     glutPostRedisplay();
 }
 
 void motion(int x, int y)
 {
-    y = view[3] - y;
-    auto diff = mouseClick - planeUnproject(glm::dvec2(x, y), camera, projection, view);
+    double speed = 0.1;
+
+    auto diff = speed * glm::normalize(mouseClick - glm::dvec2(x, y));
     
-    cameraPos = glm::normalize(cameraPos + glm::dvec3(diff,0.0)) * camDist;
+    camPhi += diff.x;
+    camTheta += diff.y;
+
+    if(camTheta < - PI)
+        camTheta = - PI;
+
+    if(camTheta > PI)
+        camTheta = PI;
+
+    if(camPhi < -PI)
+        camPhi = - PI;
+
+    if(camPhi > PI)
+        camPhi = PI;
+
+    updateCam();
 
     glutPostRedisplay();
 }
@@ -184,9 +211,13 @@ void init() {
 
 int main(int argc, char **argv)
 {
-    cout << "Nombre del archivo a utilizar:" << endl;
-    cin >> sNombre;
-    
+    if(argc > 1) {
+        strcpy(sNombre, argv[1]);
+    } else {
+        cout << "Nombre del archivo a utilizar:" << endl;
+        cin >> sNombre;
+    }
+
     if(strcmp(sNombre, "") != 0) {
         int width = 800;
         int height = 600;
@@ -197,8 +228,7 @@ int main(int argc, char **argv)
         glutCreateWindow("GLUT");
         LoadTexture("map.bmp");
 
-        cameraPos = glm::dvec3(0,0,1) * camDist;
-        camera = glm::lookAt(cameraPos, glm::dvec3(0,0,0), glm::dvec3(0,1,0));
+        updateCam();
         projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);
         view = glm::dvec4(0,0,width,height);
 

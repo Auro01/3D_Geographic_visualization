@@ -35,12 +35,28 @@ int subdiv = 0;
 double camDist = 2.5;
 double camDistStep = 0.05;
 
+glm::dvec2 planeUnproject( const glm::dvec2& win )
+{
+    glm::dvec3 world1 = glm::unProject(glm::dvec3(win, 0.01), camera, projection, view);
+    glm::dvec3 world2 = glm::unProject(glm::dvec3(win, 0.99), camera, projection, view);
+
+    // u is a value such that:
+    // 0 = world1.z + u * ( world2.z - world1.z )
+    double u = -world1.z / ( world2.z - world1.z );
+    // clamp u to reasonable values
+    if( u < 0 ) u = 0;
+    if( u > 1 ) u = 1;
+
+    return glm::dvec2( world1 + u * ( world2 - world1 ) );
+}
+
 void mouse(int button, int state, int x, int y)
 {
     switch(button) {
         case GLUT_LEFT_BUTTON:
             if(state == GLUT_DOWN) {
-                mouseClick = glm::ivec2(x,y);
+                y = view[3] - y;
+                mouseClick = planeUnproject(glm::dvec2(x, y));
             }
         case GLUT_MIDDLE_BUTTON:
             break;
@@ -68,7 +84,8 @@ void mouse(int button, int state, int x, int y)
 
 void motion(int x, int y)
 {
-    auto diff = mouseClick - glm::dvec2(x, y);
+    y = view[3] - y;
+    auto diff = mouseClick - planeUnproject(glm::dvec2(x, y));
     
     cameraPos = glm::normalize(cameraPos + glm::dvec3(diff,0.0)) * camDist;
 

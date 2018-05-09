@@ -34,14 +34,14 @@ void Object::draw(const glm::dmat4 & camera) {
     glEnd();
 }
 
-void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
+void sphere(double radius, int n, vector<Object> & objects) {
     // Octahedron
-    auto top = center + glm::dvec3(0, radius, 0);
-    auto nearRight = center + glm::dvec3(radius * sin(PI_4), 0, radius * cos(PI_4));
-    auto farRight = center + glm::dvec3(radius * sin(3 * PI_4), 0, radius * cos(3 * PI_4));  
-    auto farLeft = center + glm::dvec3(radius * sin(5 * PI_4), 0, radius * cos(5 * PI_4));  
-    auto nearLeft = center + glm::dvec3(radius * sin(7 * PI_4), 0, radius * cos(7 * PI_4));
-    auto bottom = center + glm::dvec3(0, -radius, 0);
+    auto top = glm::dvec3(0, radius, 0);
+    auto nearRight = glm::dvec3(radius * sin(PI_4), 0, radius * cos(PI_4));
+    auto farRight = glm::dvec3(radius * sin(3 * PI_4), 0, radius * cos(3 * PI_4));  
+    auto farLeft = glm::dvec3(radius * sin(5 * PI_4), 0, radius * cos(5 * PI_4));  
+    auto nearLeft = glm::dvec3(radius * sin(7 * PI_4), 0, radius * cos(7 * PI_4));
+    auto bottom = glm::dvec3(0, -radius, 0);
 
     queue<glm::dvec3> sphere;
     queue<glm::dvec2> texCoor;
@@ -76,11 +76,9 @@ void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
     texCoor.emplace(0.749169, 0.499891); texCoor.emplace(0.749293, 0.003298);
     texCoor.emplace(0.748966, 0.500445); texCoor.emplace(0.499575, 0.252136);
 
-    if(n > 0) {
-        unsigned iterations = 8 * pow(4, n - 1);
-
-        // Subdivide
-        for(unsigned i = 0; i < iterations; i++) {
+    // Subdivide
+    for(unsigned i = 0; i < n; i++) {
+        for(int j = 0; j < 8 * pow(4,i); j++) {
             auto a = sphere.front(); sphere.pop();
             auto b = sphere.front(); sphere.pop();
             auto c = sphere.front(); sphere.pop();
@@ -97,9 +95,9 @@ void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
             auto texE = (texA + texC) / 2.0;
             auto texF = (texB + texA) / 2.0;
 
-            d = (d - center) * radius / glm::distance(center, d);
-            e = (e - center) * radius / glm::distance(center, e);
-            f = (f - center) * radius / glm::distance(center, f);
+            d = radius * glm::normalize(d);
+            e = radius * glm::normalize(e);
+            f = radius * glm::normalize(f);
 
             sphere.push(a); sphere.push(f); sphere.push(e);
             sphere.push(f); sphere.push(b); sphere.push(d);
@@ -124,16 +122,17 @@ void sphere(glm::dvec3 center, double radius, int n, vector<Object> & objects) {
     }
 }
 
-void marker(glm::dvec3 center, double side, double height, glm::dvec3 direction, int n, vector<Object> & objects) {
+void marker(double side, double height, vector<Object> & objects) {
     auto len = side / 2;
-    auto lfr = center + glm::dvec3(len, 0, -len);
-    auto lfl = center + glm::dvec3(-len, 0, -len);
-    auto lnr = center + glm::dvec3(len, 0, len);
-    auto lnl = center + glm::dvec3(-len, 0, len);
-    auto ufr = center + direction * height + glm::dvec3(len, 0, -len);
-    auto ufl = center + direction * height + glm::dvec3(-len, 0, -len);
-    auto unr = center + direction * height + glm::dvec3(len, 0, len);
-    auto unl = center + direction * height + glm::dvec3(-len, 0, len);
+
+    auto lfr = glm::dvec3(len, 0, -len);
+    auto lfl = glm::dvec3(-len, 0, -len);
+    auto lnr = glm::dvec3(len, 0, len);
+    auto lnl = glm::dvec3(-len, 0, len);
+    auto ufr = lfr + glm::dvec3(0, height, 0);
+    auto ufl = lfl + glm::dvec3(0, height, 0);
+    auto unr = lnr + glm::dvec3(0, height, 0);
+    auto unl = lnl + glm::dvec3(0, height, 0);
 
     objects.emplace_back();
 
@@ -148,20 +147,20 @@ void marker(glm::dvec3 center, double side, double height, glm::dvec3 direction,
     object.vertices.push_back(lfl); object.vertices.push_back(unl); object.vertices.push_back(ufl);
     
     // Back
-    object.vertices.push_back(ufl); object.vertices.push_back(lfr); object.vertices.push_back(ufr);
-    object.vertices.push_back(lfr); object.vertices.push_back(lfl); object.vertices.push_back(ufl);
+    object.vertices.push_back(ufl); object.vertices.push_back(lfr); object.vertices.push_back(lfl);
+    object.vertices.push_back(lfr); object.vertices.push_back(ufl); object.vertices.push_back(ufr);
 
     // Right
-    object.vertices.push_back(unl); object.vertices.push_back(lfl); object.vertices.push_back(lnl);
-    object.vertices.push_back(lfl); object.vertices.push_back(unl); object.vertices.push_back(lfl);
+    object.vertices.push_back(ufr); object.vertices.push_back(lnr); object.vertices.push_back(lfr);
+    object.vertices.push_back(lnr); object.vertices.push_back(ufr); object.vertices.push_back(unr);
 
     // Top
     object.vertices.push_back(ufr); object.vertices.push_back(unl); object.vertices.push_back(unr);
-    object.vertices.push_back(ufl); object.vertices.push_back(unl); object.vertices.push_back(ufr);
+    object.vertices.push_back(unl); object.vertices.push_back(ufr); object.vertices.push_back(ufl);
 
     // Bot
-    object.vertices.push_back(lnr); object.vertices.push_back(lfl); object.vertices.push_back(lnl);
-    object.vertices.push_back(lfr); object.vertices.push_back(lfl); object.vertices.push_back(lnr);
+    object.vertices.push_back(lnr); object.vertices.push_back(lfl); object.vertices.push_back(lfr);
+    object.vertices.push_back(lfl); object.vertices.push_back(lnr); object.vertices.push_back(lnl);
 }
 
 #endif

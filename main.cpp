@@ -39,7 +39,7 @@ glm::dvec2 mouseClick;
 vector<Object> objects;
 vector<MapDataPoint> data;
 
-int subdiv = 0;
+int subdiv = 1;
 double camDist = 3;
 double camDistStep = 0.05;
 double camTheta = 0;
@@ -142,7 +142,7 @@ void display()
     glutSwapBuffers();
 }
 
-void LoadTexture(const char *filename){
+void loadTexture(const char *filename){
     BmpLoader blLoader(filename);
     glGenTextures(1,&ID);
     glBindTexture(GL_TEXTURE_2D,ID);
@@ -157,6 +157,37 @@ void LoadTexture(const char *filename){
 void idle()
 {
     glutPostRedisplay();
+}
+
+void createObjects(){
+    objects.clear();
+
+    double radius = 2;
+    double max = -numeric_limits<double>::infinity();
+
+    for(auto & point : data) {
+        if(point.value > max)
+            max = point.value;
+    }
+
+    sphere(radius, subdiv, objects);
+
+    for(auto & point : data) {
+        auto theta = point.latitude * PI / 360;
+        auto phi = point.longitude * PI / 360;
+        auto width = 0.2;
+
+        auto x = radius * sin(theta) * sin(phi);
+        auto y = radius * cos(theta);
+        auto z = radius * sin(theta) * cos(phi);
+
+        marker(width, (point.value / max) * 0.2, objects);
+
+        auto & mark = objects.back();
+        mark.modelTrans = glm::translate(mark.modelTrans, glm::dvec3(x, y, z));
+        mark.modelTrans = glm::rotate(mark.modelTrans, point.latitude, glm::dvec3(1, 0, 0));
+        mark.modelTrans = glm::rotate(mark.modelTrans, point.longitude, glm::dvec3(0, 1, 0));
+    }
 }
 
 void init() {
@@ -177,37 +208,9 @@ void init() {
     glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
 
-    double radius = 2;
-    double max = -numeric_limits<double>::infinity();
-    double min = numeric_limits<double>::infinity();
-    double norm;
-
-    for(auto & point : data) {
-        if(point.value > max)
-            max = point.value;
-
-        if(point.value < min)
-            min = point.value;
-    }
-
-    norm = 1 / (max - min);
-
-    sphere(glm::dvec3(0,0,0), radius, subdiv, objects);
-
-    for(auto & point : data) {
-        auto theta = point.latitude * PI / 360;
-        auto phi = point.longitude * PI / 360;
-        auto width = 0.2;
-
-        auto x = radius * sin(theta) * sin(phi);
-        auto y = radius * cos(theta);
-        auto z = radius * sin(theta) * cos(phi);
-
-        auto pos = glm::dvec3(x,y,z);
-        
-        marker(pos, width, point.value * norm, glm::normalize(pos), subdiv, objects);
-    }
+    createObjects();
 }
+
 static void key(unsigned char key, int x, int y)
 {
     switch (key)
@@ -227,6 +230,8 @@ static void key(unsigned char key, int x, int y)
 
             if(subdiv > 10)
                 subdiv = 10;
+
+            createObjects();
             break;
 
         case GLUT_KEY_DOWN:
@@ -234,6 +239,35 @@ static void key(unsigned char key, int x, int y)
 
             if(subdiv < 0)
                 subdiv = 0;
+
+            createObjects();
+            break;
+    }
+
+    glutPostRedisplay();
+}
+
+static void specialKey(int key, int x, int y)
+{
+    switch (key)
+    {
+        case GLUT_KEY_UP:
+            subdiv += 1;
+
+            if(subdiv > 10)
+                subdiv = 10;
+
+            createObjects();
+            break;
+
+        case GLUT_KEY_DOWN:
+            subdiv -= 1;
+
+            if(subdiv < 0)
+                subdiv = 0;
+
+            createObjects();
+            break;
     }
 
     glutPostRedisplay();
@@ -256,13 +290,14 @@ int main(int argc, char **argv)
         glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
         glutInitWindowSize(width, height);
         glutCreateWindow("GLUT");
-        LoadTexture("world.bmp");
+        loadTexture("world.bmp");
 
         updateCam();
         projection = glm::perspective(60.0, (double) width / height, 0.01, 10.0);
         view = glm::dvec4(0,0,width,height);
 
         glutKeyboardFunc(key);
+        glutSpecialFunc(specialKey);
         glutMouseFunc(mouse);
         glutMotionFunc(motion);
         glutDisplayFunc(display);

@@ -18,26 +18,36 @@ void saveToObj(vector<Object> & objects, char * sNombre)
 {
     char sAux[100];
     auto n = strlen(sNombre) - 4;
+    int vertCount = 0;
 
     strcpy(sAux, sNombre);
     strcpy(sAux + n, ".obj");
 
     ofstream myfile(sAux);
-    int iVertices = 1;
     if(myfile.is_open()){
-        auto object = objects.begin();
-        while(object != objects.end()) {
-            for(auto & vertex : object->vertices) {
-                myfile<<"v"<<" "<<vertex.x<<" "<<vertex.y<<" "<<vertex.z<<"\n";
-                if(iVertices%3 == 0){
-                    myfile<<"\n";
-                    myfile<<"f"<<" "<<iVertices-2<<" "<<iVertices-1<<" "<<iVertices<<"\n";
-                    myfile<<"\n";
-                }
-                iVertices++;
+        for(auto & object : objects) {
+            for(auto & vertex : object.vertices) {
+                auto p = object.modelTrans * glm::dvec4(vertex, 1.0);
+
+                myfile << "v" << " ";
+                myfile << p.x << " ";
+                myfile << p.y << " ";
+                myfile << p.z <<  endl;
+
+                vertCount++;
             }
-            ++object;
         }
+        
+        myfile << endl;
+
+        for(int i = 1; i < vertCount; i += 3) {
+            myfile << "f" << " ";
+            myfile << i << " ";
+            myfile << i + 1 << " ";
+            myfile << i + 2 << endl;
+        }
+
+        cout << "Exported!" << endl;
     }
     else cout << "Unable to open file";
     myfile.close();

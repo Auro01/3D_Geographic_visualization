@@ -49,7 +49,8 @@ void saveToObj(vector<Object> & objects, char * sNombre)
 
         cout << "Exported!" << endl;
     }
-    else cout << "Unable to open file";
+    else cout << "Unable to open file"<<endl;;
+    cout << "obj exported succesfully"<<endl;
     myfile.close();
 }
 

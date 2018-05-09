@@ -39,7 +39,7 @@ glm::dvec2 mouseClick;
 vector<Object> objects;
 vector<MapDataPoint> data;
 
-int subdiv = 1;
+int subdiv = 3;
 double camDist = 3;
 double camDistStep = 0.05;
 double camTheta = 0;
@@ -95,7 +95,7 @@ void motion(int x, int y)
     auto position = glm::dvec2(x, y);
 
     auto diff = speed * glm::normalize(mouseClick - position);
-    
+
     camPhi += diff.x;
     camTheta += diff.y;
 
@@ -112,7 +112,7 @@ void motion(int x, int y)
         camPhi = PI;
 
     updateCam();
-    
+
     glutPostRedisplay();
 }
 
@@ -127,7 +127,7 @@ void reshape(int width, int height)
 
 void display()
 {
-    glClearColor(0, 0, 0, 1);
+    glEnable(GL_TEXTURE_2D);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
@@ -140,6 +140,7 @@ void display()
     }
 
     glutSwapBuffers();
+    glDisable(GL_TEXTURE_2D);
 }
 
 void loadTexture(const char *filename){

@@ -25,6 +25,7 @@ void saveToObj(vector<Object> & objects, char * sNombre)
     ofstream myfile(sAux);
     int iVertices = 1;
     if(myfile.is_open()){
+            cout << "Saving to file..."<<endl;
         auto object = objects.begin();
         while(object != objects.end()) {
             for(auto & vertex : object->vertices) {
@@ -39,7 +40,8 @@ void saveToObj(vector<Object> & objects, char * sNombre)
             ++object;
         }
     }
-    else cout << "Unable to open file";
+    else cout << "Unable to open file"<<endl;;
+    cout << "obj exported succesfully"<<endl;
     myfile.close();
 }
 
